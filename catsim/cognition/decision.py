@@ -77,6 +77,8 @@ class DecisionSystem:
         return scores
 
     def choose(self) -> Activity:
+        reg = self.regulation
+        n = self.needs
         self.scores = self.utilities()
         self.adjustments = {action: self.rng.uniform(-2, 2) for action in self.scores}
         self.final_scores = {
