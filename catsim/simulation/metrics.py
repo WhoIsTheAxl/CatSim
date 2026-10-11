@@ -18,3 +18,24 @@ class Metrics:
     def report(self) -> dict:
         return {"ticks": self.ticks, "actions": dict(self.actions),
                 "locations": dict(self.locations)}
+
+
+def batch_experiment(seeds=range(10), steps=500):
+    """Reproducible aggregate simulation experiment (not empirical validation)."""
+    from catsim.agents.cat import Cat
+    if steps < 0:
+        raise ValueError('steps must be nonnegative')
+    results = []
+    for seed in seeds:
+        cat = Cat(seed=seed)
+        for _ in range(steps):
+            cat.step()
+        results.append(cat.metrics.report())
+    actions = Counter()
+    locations = Counter()
+    for report in results:
+        actions.update(report['actions'])
+        locations.update(report['locations'])
+    return {'runs': len(results), 'steps_per_run': steps,
+            'actions': dict(actions), 'locations': dict(locations),
+            'individual_runs': results}
