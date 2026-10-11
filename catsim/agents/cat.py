@@ -1,6 +1,7 @@
 """Cat agent: coordinates needs, perception, cognition and action execution."""
 import random
 from catsim.biology.needs import Needs
+from catsim.biology.metabolism import Metabolism
 from catsim.biology.clock import SimulationClock
 from catsim.biology.personality import Personality
 from catsim.behavior.regulation import Regulation
@@ -18,11 +19,16 @@ class Cat(DecisionSystem, BehaviorExecutor):
     def __init__(self, name: str = "Mochi", seed: int = 42,
                  world: Environment | None = None,
                  personality: Personality | None = None,
-                 regulation: Regulation | None = None):
+                 regulation: Regulation | None = None,
+                 tick_minutes: float = 1.0,
+                 metabolism: Metabolism | None = None):
         self.name = name
         self.personality = personality or Personality()
         self.regulation = regulation or Regulation()
-        self.clock = SimulationClock()
+        if tick_minutes <= 0:
+            raise ValueError('tick_minutes must be positive')
+        self.clock = SimulationClock(tick_minutes=tick_minutes)
+        self.metabolism = metabolism or Metabolism()
         self.metrics = Metrics()
         self.rng = random.Random(seed)
         self.world = world if world is not None else Environment()
@@ -54,7 +60,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
 
     def step(self) -> str:
         self.clock.advance()
-        self.needs.tick()
+        self.needs.tick(self.clock.tick_minutes, self.metabolism)
         for action in list(self.cooldowns):
             self.cooldowns[action] -= 1
             if self.cooldowns[action] <= 0:
