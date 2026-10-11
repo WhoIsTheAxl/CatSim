@@ -14,7 +14,8 @@ class WorldObject:
 def default_objects() -> dict[str, WorldObject]:
     return {
         "bowl_food": WorldObject("bowl_food", "food", "Kitchen"),
-        "bowl_water": WorldObject("bowl_water", "water", "Kitchen"),
+        "bowl_water": WorldObject("bowl_water", "water", "Living Room"),
+        "scratching_post": WorldObject("scratching_post", "scratch_surface", "Living Room"),
         "bed": WorldObject("bed", "shelter", "Bedroom"),
         "box": WorldObject("box", "shelter", "Cardboard Box"),
         "mouse_toy": WorldObject("mouse_toy", "toy", "Living Room"),
