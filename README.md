@@ -14,6 +14,26 @@ python -m catsim --steps 50 --seed 42 --debug
 python -m unittest discover -s tests -v
 ```
 
+## Architecture
+
+```text
+catsim/
+  __main__.py          CLI only
+  core/math.py         Shared numeric utilities
+  world/model.py       Locations and world topology
+  biology/needs.py     Physiological state dynamics
+  cognition/memory.py  Familiarity and discovered resources
+  cognition/decision.py  Utility scoring and action selection
+  behavior/activity.py   Activity data and duration
+  behavior/execution.py  Behavior outcomes and cooldowns
+  agents/cat.py        Agent orchestration
+  simulation/runner.py Simulation loop and diagnostics
+tests/
+  test_simulation.py
+```
+
+Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
+
 ## v0.2 prototype
 
 - Internal hunger, thirst, fatigue, fear, curiosity and grooming motivation.
