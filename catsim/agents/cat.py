@@ -31,6 +31,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.needs = Needs()
         self.memory = Memory()
         self.observations = ()
+        self.new_stimuli = ()
         self._noticed_sounds: set[str] = set()
         self.perceive()
         self.activity: Activity | None = None
@@ -43,6 +44,8 @@ class Cat(DecisionSystem, BehaviorExecutor):
 
     def perceive(self) -> None:
         self.observations = self.senses.observe(self.location, self.world)
+        self.new_stimuli = tuple(item for item in self.observations
+                                 if item.kind == 'sound' and item.object_id not in self._noticed_sounds)
         self.memory.observe(self.world.places[self.location], self.observations)
         for item in self.observations:
             if item.kind == "sound" and item.object_id not in self._noticed_sounds:
@@ -57,7 +60,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
             if self.cooldowns[action] <= 0:
                 del self.cooldowns[action]
         self.perceive()
-        interrupted = should_interrupt_rest(self.activity, self.observations)
+        interrupted = should_interrupt_rest(self.activity, self.new_stimuli)
         if interrupted:
             self.activity = None
         if self.activity is None:
