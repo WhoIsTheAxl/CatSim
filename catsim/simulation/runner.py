@@ -12,8 +12,8 @@ def run(steps: int = 100, seed: int = 42, debug: bool = False) -> list[str]:
         events.append(line)
         print(line)
         if debug and "starts " in event:
-            print("  utilities:", ", ".join(
-                f"{key}={value:.1f}" for key, value in
+            print("  utilities (raw -> final):", ", ".join(
+                f"{key}={value:.1f}->{cat.final_scores[key]:.1f}" for key, value in
                 sorted(cat.scores.items(), key=lambda item: -item[1])))
     return events
 
