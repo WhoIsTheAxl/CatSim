@@ -16,7 +16,8 @@ from catsim.perception.sensory_system import SensorySystem
 class Cat(DecisionSystem, BehaviorExecutor):
     def __init__(self, name: str = "Mochi", seed: int = 42,
                  world: Environment | None = None,
-                 personality: Personality | None = None,\n                 regulation: Regulation | None = None):
+                 personality: Personality | None = None,
+                 regulation: Regulation | None = None):
         self.name = name
         self.personality = personality or Personality()
         self.regulation = regulation or Regulation()
