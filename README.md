@@ -45,6 +45,25 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.9 — Completed experimental feature set (pending test verification)
+
+- **Toy habituation:** play with an unchanged toy reduces future interest;
+  interest recovers during other activities. Toy novelty can reset habituation.
+- **Sleep pressure:** an independent homeostatic state rises during waking
+  activities and falls during sleep. It contributes to sleep utility alongside
+  fatigue and the existing daily rhythm. This is a simplified mechanism,
+  **not** a validated feline sleep model.
+- **Additional actions:** `stretch` (brief low-commitment movement),
+  `observe` (quiet environmental attention), and `bat_toy` (shorter,
+  lower-intensity toy interaction). Toy batting requires a perceived toy.
+  Actions remain utility-driven, not artificially rotated.
+- **Tests:** added dedicated tests for new actions, toy perception, sleep
+  pressure, need effects, seeded reproducibility and tick accounting.
+- **Limitations:** Numerical rates, action durations and utility weights
+  are hypotheses; observe/stretch currently have no specialized physiological
+  outcome. Sleep is not yet divided into REM/non-REM stages. Activity
+  comparisons to real cats are a v1.0 research milestone.
+
 ## v0.9 — Behavioral habituation (first implementation pass)
 
 - Added time-scaled **toy-play habituation**: repeating play with an unchanged
