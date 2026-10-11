@@ -18,13 +18,13 @@ class DecisionSystem:
 
         if reg.eligible("rest", n):
             scores["rest"] = 8 + n.fatigue * 0.3
-        if reg.eligible("sleep", n):
+        if self.regulation.eligible("sleep", self.needs):
             scores["sleep"] = n.fatigue * (0.9 + rest_rhythm * 0.5) + (24 if "shelter" in perceived else -12)
         if reg.eligible("groom", n):
             scores["groom"] = n.grooming_urge * 0.7
-        if "food" in perceived and reg.eligible("eat", n):
+        if "food" in perceived and self.regulation.eligible("eat", self.needs):
             scores["eat"] = n.hunger * 1.5
-        if "water" in perceived and reg.eligible("drink", n):
+        if "water" in perceived and self.regulation.eligible("drink", self.needs):
             scores["drink"] = n.thirst * 1.6
         if "toy" in perceived and reg.eligible("play", n):
             scores["play"] = n.play_urge * self.personality.playfulness * (1.2 + rhythm * 0.5) - n.fatigue * 0.25
@@ -84,6 +84,24 @@ class DecisionSystem:
             for action, value in self.scores.items()
         }
         action = max(self.final_scores, key=self.final_scores.get)
+        # Retain navigation intent across intermediate rooms.
+        target = getattr(self, "navigation_target", None)
+        if target and target != self.location and action not in {"eat", "drink", "hide"}:
+            step = next_step(self.world.places, self.location, target)
+            if step:
+                action = "move:" + step
+                self.scores.setdefault(action, 0.0)
+            else:
+                self.navigation_target = None
+        if action.startswith("move:") and self.navigation_target is None:
+            first_step = action.split(":", 1)[1]
+            for destination, kinds in self.memory.resources.items():
+                if destination != self.location and next_step(self.world.places, self.location, destination) == first_step:
+                    if (("food" in kinds and reg.eligible("eat", n)) or
+                        ("water" in kinds and reg.eligible("drink", n)) or
+                        ("shelter" in kinds and reg.eligible("sleep", n))):
+                        self.navigation_target = destination
+                        break
         self.goal = (Goal("navigate", action.split(":", 1)[1], self.scores[action])
                      if action.startswith("move:") else
                      Goal(action, self.location, self.scores[action]))
