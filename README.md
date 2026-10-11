@@ -29,6 +29,10 @@ catsim/
   behavior/navigation.py  Room-graph pathfinding
   research/registry.py Evidence provenance
   biology/needs.py     Physiological state dynamics
+  biology/clock.py     Explicit simulation time
+  biology/personality.py Individual traits
+  behavior/regulation.py Eligibility thresholds
+  simulation/metrics.py Activity and room statistics
   cognition/memory.py  Familiarity and discovered resources
   cognition/decision.py  Utility scoring and action selection
   behavior/activity.py   Activity data and duration
@@ -40,6 +44,18 @@ tests/
 ```
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
+
+## v0.4 — Behavioral regulation and observability
+
+- **Action eligibility:** eating, drinking, sleeping, resting, grooming, playing, hiding and investigating have configurable minimum-need gates. These are **unvalidated simulation parameters**.
+- **Exploration:** a baseline exploratory drive competes with physiological needs, reducing the kitchen-trap failure mode.
+- **Individual differences:** configurable boldness, curiosity and playfulness coefficients.
+- **Clock:** explicit tick duration and elapsed simulated time (not a biologically calibrated clock).
+- **Metrics:** count started activities and room occupancy for experimental comparisons.
+- **Debug scores:** raw utility and randomized final utility are shown together.
+- **Regression tests:** `tests/test_regulation.py` covers behavior gating and instrumentation.
+
+The goal object remains a lightweight record, **not** a complete persistent multi-room planning system. Future work includes persistent goals, time-dependent activity patterns, stimulus decay and calibration to real feline observations.
 
 ## v0.2 prototype
 
