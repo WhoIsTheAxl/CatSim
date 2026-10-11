@@ -45,6 +45,49 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v1.0 research track — Scientific validation infrastructure (in progress)
+
+**v1.0 is NOT scientifically validated yet.** This initial research pass adds:
+
+- An auditable evidence registry with publication identifiers, model mappings,
+  evidence status and limitations. The general two-process sleep framework is
+  explicitly marked **cross-species theory**, not feline calibration.
+- `catsim.research.validation.simulate_cohort` for seeded, reproducible
+  behavioral proportions (movement destinations are aggregated).
+- `total_variation` and `compare_cohort` to compare modeled activity
+  distributions with **user-supplied** empirical proportions.
+- Eight software tests for distribution correctness and provenance.
+
+Example (summary only; no giant debug output):
+
+```bash
+python - <<'PY'
+from catsim.research.validation import simulate_cohort
+from catsim.research.registry import audit
+print(audit())
+print(simulate_cohort(seeds=range(10), steps=150))
+PY
+```
+
+### Validation protocol before any realism claim
+
+1. Select a defined target population (e.g., indoor adult companion cats),
+   context, time window, measurement method and relevant health constraints.
+2. Extract quantitative reference distributions from accessible original
+   publications. Record sample size, sampling biases and uncertainty.
+3. Define an observation mapping between study behaviors and simulator
+   actions. Never equate `rest` with EEG-confirmed sleep.
+4. Fit parameters on a training dataset, preserving a separate validation
+   dataset. Report error bars and sensitivity across seeds and assumptions.
+5. Test sleep bouts, feeding intervals, play and location use over appropriate
+   observation windows. Short 150-tick runs are debugging samples, **not**
+   representative 24-hour activity budgets.
+6. Publish discrepancies and unsupported assumptions rather than tuning to
+   a visually appealing trace.
+
+**No empirical activity targets or fitted physiological coefficients are
+bundled yet.** Passing tests proves software invariants, not cat realism.
+
 ## v0.9 — Completed experimental feature set (pending test verification)
 
 - **Toy habituation:** play with an unchanged toy reduces future interest;
