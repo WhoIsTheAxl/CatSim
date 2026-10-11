@@ -5,6 +5,7 @@ from catsim.biology.clock import SimulationClock
 from catsim.biology.personality import Personality
 from catsim.behavior.regulation import Regulation
 from catsim.simulation.metrics import Metrics
+from catsim.behavior.arousal import should_interrupt_rest
 from catsim.cognition.memory import Memory
 from catsim.cognition.decision import DecisionSystem
 from catsim.behavior.execution import BehaviorExecutor
@@ -30,6 +31,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.needs = Needs()
         self.memory = Memory()
         self.observations = ()
+        self._noticed_sounds: set[str] = set()
         self.perceive()
         self.activity: Activity | None = None
         self.last_destination: str | None = None
@@ -43,7 +45,8 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.observations = self.senses.observe(self.location, self.world)
         self.memory.observe(self.world.places[self.location], self.observations)
         for item in self.observations:
-            if item.kind == "sound":
+            if item.kind == "sound" and item.object_id not in self._noticed_sounds:
+                self._noticed_sounds.add(item.object_id)
                 self.needs.fear = min(100, self.needs.fear + item.intensity * 0.1)
 
     def step(self) -> str:
@@ -53,10 +56,13 @@ class Cat(DecisionSystem, BehaviorExecutor):
             self.cooldowns[action] -= 1
             if self.cooldowns[action] <= 0:
                 del self.cooldowns[action]
+        self.perceive()
+        interrupted = should_interrupt_rest(self.activity, self.observations)
+        if interrupted:
+            self.activity = None
         if self.activity is None:
-            self.perceive()
             self.activity = self.choose()
-            event = f"starts {self.activity.name}"
+            event = f"interrupts rest; starts {self.activity.name}" if interrupted else f"starts {self.activity.name}"
         else:
             event = f"continues {self.activity.name}"
         self.activity.remaining -= 1
