@@ -35,7 +35,7 @@ class DecisionSystem:
 
         for destination in place.neighbors:
             familiarity = self.memory.familiarity.get(destination, 0)
-            novelty = (100 - familiarity) * 0.16
+            novelty = (100 - familiarity) * 0.16 * (n.curiosity / 100)
             score = (n.curiosity * self.personality.curiosity * 0.24
                      + novelty - n.fear * (1 - self.personality.boldness) * 0.5
                      - n.fatigue * 0.15)
