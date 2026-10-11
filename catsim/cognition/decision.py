@@ -12,14 +12,14 @@ class DecisionSystem:
         place = self.world.places[self.location]
         perceived = {item.kind for item in self.observations}
         reg = self.regulation
-        scores: dict[str, float] = {"idle": 9.0}
+        scores: dict[str, float] = {"idle": 14.0}
         rhythm = activity_drive(self.clock.hour_of_day)
         rest_rhythm = rest_drive(self.clock.hour_of_day)
 
         if reg.eligible("rest", n):
-            scores["rest"] = 8 + n.fatigue * 0.3
+            scores["rest"] = 7 + n.fatigue * 0.35 + (7 if "shelter" in perceived else 0)
         if self.regulation.eligible("sleep", self.needs):
-            scores["sleep"] = n.fatigue * (0.9 + rest_rhythm * 0.5) + (24 if "shelter" in perceived else -12)
+            scores["sleep"] = n.fatigue * (0.9 + rest_rhythm * 0.5) + (24 if "shelter" in perceived else -20)
         if reg.eligible("groom", n):
             scores["groom"] = n.grooming_urge * 0.7
         if "food" in perceived and self.regulation.eligible("eat", self.needs):
@@ -35,13 +35,15 @@ class DecisionSystem:
 
         for destination in place.neighbors:
             familiarity = self.memory.familiarity.get(destination, 0)
-            novelty = (100 - familiarity) * 0.25
-            score = (reg.exploration_floor + n.curiosity * self.personality.curiosity * 0.5
+            novelty = (100 - familiarity) * 0.16
+            score = (n.curiosity * self.personality.curiosity * 0.24
                      + novelty - n.fear * (1 - self.personality.boldness) * 0.5
                      - n.fatigue * 0.15)
             if destination == self.last_destination:
                 score -= 12
-            scores["move:" + destination] = score
+            # Known, uninteresting rooms do not force purposeless travel.
+            if score > 0:
+                scores["move:" + destination] = score
 
         # Rest-site preference is informed by observed, remembered shelter.
         if reg.eligible("sleep", n):
@@ -73,7 +75,8 @@ class DecisionSystem:
                 scores[key] = max(scores.get(key, 0), motivation)
 
         for action in self.cooldowns:
-            scores.pop(action, None)
+            if action != "idle":
+                scores.pop(action, None)
         return scores
 
     def choose(self) -> Activity:
@@ -88,7 +91,7 @@ class DecisionSystem:
         action = max(self.final_scores, key=self.final_scores.get)
         # Retain navigation intent across intermediate rooms.
         target = getattr(self, "navigation_target", None)
-        if target and target != self.location and action not in {"eat", "drink", "hide"}:
+        if target and target != self.location and action not in {"eat", "drink", "hide", "sleep"}:
             step = next_step(self.world.places, self.location, target)
             if step:
                 action = "move:" + step
@@ -107,7 +110,11 @@ class DecisionSystem:
         self.goal = (Goal("navigate", action.split(":", 1)[1], self.scores[action])
                      if action.startswith("move:") else
                      Goal(action, self.location, self.scores[action]))
-        durations = {"sleep": 5, "groom": 2, "eat": 2, "drink": 2,
-                     "play": 3, "hide": 3, "rest": 2, "investigate": 3, "idle": 2}
-        return Activity(action, durations.get(action, 2),
+        durations_minutes = {"sleep": 60, "groom": 6, "eat": 10, "drink": 3,
+                             "play": 12, "hide": 15, "rest": 20,
+                             "investigate": 5, "idle": 15, "move": 3}
+        import math
+        kind = "move" if action.startswith("move:") else action
+        duration = max(1, math.ceil(durations_minutes.get(kind, 10) / self.clock.tick_minutes))
+        return Activity(action, duration,
                         action.split(":", 1)[1] if action.startswith("move:") else None)
