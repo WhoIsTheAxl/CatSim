@@ -45,6 +45,32 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.7 — The Normalization Overhaul (experimental)
+
+The first normalization pass changes **both** physiological rates and behavior
+execution. It addresses a major v0.6 inconsistency: needs accumulated slowly
+per simulated hour, but resting, sleeping, playing and feeding caused enormous
+instantaneous changes after just a few ticks.
+
+- `catsim/biology/activity_budget.py` applies action effects incrementally,
+  proportional to simulated elapsed minutes. All coefficients are **model
+  assumptions**, not values measured in domestic cats.
+- Rest, sleep, feeding, drinking, grooming, play, hiding, investigation and
+  movement no longer create fixed, end-of-action physiology jumps.
+- Activities have durations in **simulated minutes**; the simulation clock
+  converts them to tick counts. Cooldowns use simulated minutes too.
+- Idling is always eligible. Familiar, low-novelty environments no longer
+  automatically force negative-utility room-to-room movement.
+- Rest is more attractive at observed shelters. A new regression suite checks
+  duration scaling, reproducibility and no forced movement.
+
+**Important limitations:** Sleep architecture, meal-size dynamics, habituation,
+safety assessment, event scheduling and statistical comparison with empirical
+cat observations remain future work. Tick durations not evenly dividing an
+activity's duration round up to a whole tick. Behavior thresholds and all rates
+remain uncalibrated. Passing software tests establishes correctness against
+specified invariants, **not biological validity**.
+
 ## v0.6 — Biological time, navigation and experiments (experimental)
 
 - `Metabolism` provides configurable per-hour need-change rates, applied using `SimulationClock.tick_minutes`.
