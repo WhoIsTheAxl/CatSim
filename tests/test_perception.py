@@ -13,7 +13,8 @@ class PerceptionTests(unittest.TestCase):
         world = Environment()
         world.add_object(WorldObject("hidden", "toy", "Living Room", visible=False))
         observed = SensorySystem().observe("Living Room", world)
-        self.assertEqual({o.object_id for o in observed}, {"mouse_toy"})
+        self.assertEqual({o.object_id for o in observed}, {"mouse_toy", "scratching_post"})
+        self.assertNotIn("hidden", {o.object_id for o in observed})
 
     def test_resource_is_learned_after_arrival(self):
         cat = Cat()
