@@ -45,6 +45,16 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.6 — Biological time, navigation and experiments (experimental)
+
+- `Metabolism` provides configurable per-hour need-change rates, applied using `SimulationClock.tick_minutes`.
+- `Cat(tick_minutes=..., metabolism=...)` enables controlled time-scale experiments.
+- Resource navigation now retains a destination across intermediate rooms until arrival or a competing immediate need.
+- `catsim.simulation.metrics.batch_experiment(seeds, steps)` aggregates action and occupancy statistics over reproducible seeds.
+- Five regression tests cover time normalization, clock configuration, batch determinism and navigation.
+
+**Scientific status:** Per-hour rates, activity durations, feeding/sleeping effects and navigation priority rules are still hypotheses. This version changes the simulation's baseline dynamics substantially; compare runs cautiously. Tests must be run locally/CI before treating the release as stable.
+
 ## v0.5 — Research-informed rest and activity (experimental)
 
 - Daily activity drive with configurable simulation-clock input; twilight peaks are a **hypothesis-inspired curve**, not fitted measurements.
