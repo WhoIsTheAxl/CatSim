@@ -1,4 +1,9 @@
-"""Experimental utility-based choices, gated by behavioral eligibility."""
+"""Observation-based utility choices and need-directed resource discovery.
+
+Utilities are hypotheses, not empirical feline behavior probabilities.
+Unknown resources cannot be selected by consulting world objects.
+"""
+import math
 from catsim.behavior.activity import Activity
 from catsim.behavior.navigation import next_step
 from catsim.cognition.goals import Goal
@@ -8,112 +13,117 @@ from catsim.behavior.resting import preferred_rest_site
 
 class DecisionSystem:
     def utilities(self) -> dict[str, float]:
-        n = self.needs
-        place = self.world.places[self.location]
+        n, reg = self.needs, self.regulation
         perceived = {item.kind for item in self.observations}
-        reg = self.regulation
-        scores: dict[str, float] = {"idle": 14.0}
+        scores = {"idle": 14.0}
         rhythm = activity_drive(self.clock.hour_of_day)
         rest_rhythm = rest_drive(self.clock.hour_of_day)
-
         if reg.eligible("rest", n):
-            scores["rest"] = 7 + n.fatigue * 0.35 + (7 if "shelter" in perceived else 0)
-        if self.regulation.eligible("sleep", self.needs):
-            scores["sleep"] = n.fatigue * (0.9 + rest_rhythm * 0.5) + (24 if "shelter" in perceived else -20)
+            scores["rest"] = 7 + n.fatigue * .35 + (7 if "shelter" in perceived else 0)
+        if reg.eligible("sleep", n):
+            scores["sleep"] = n.fatigue * (.9 + rest_rhythm * .5) + (24 if "shelter" in perceived else -20)
         if reg.eligible("groom", n):
-            scores["groom"] = n.grooming_urge * 0.7
-        if "food" in perceived and self.regulation.eligible("eat", self.needs):
+            scores["groom"] = n.grooming_urge * .7
+        if "food" in perceived and reg.eligible("eat", n):
             scores["eat"] = n.hunger * 1.5
-        if "water" in perceived and self.regulation.eligible("drink", self.needs):
+        if "water" in perceived and reg.eligible("drink", n):
             scores["drink"] = n.thirst * 1.6
         if "toy" in perceived and reg.eligible("play", n):
-            scores["play"] = n.play_urge * self.personality.playfulness * (1.2 + rhythm * 0.5) - n.fatigue * 0.25
+            scores["play"] = n.play_urge * self.personality.playfulness * (1.2 + rhythm * .5) - n.fatigue * .25
         if "shelter" in perceived and reg.eligible("hide", n):
             scores["hide"] = n.fear * 1.4
         if "novel_object" in perceived and reg.eligible("investigate", n):
-            scores["investigate"] = n.curiosity * self.personality.curiosity - n.fear * 0.3
+            scores["investigate"] = n.curiosity * self.personality.curiosity - n.fear * .3
 
-        for destination in place.neighbors:
+        known_food = any("food" in kinds for kinds in self.memory.resources.values())
+        known_water = any("water" in kinds for kinds in self.memory.resources.values())
+        # Missing resources produce search motivation, NOT knowledge of their position.
+        unmet_search = max(
+            n.hunger * .95 if reg.eligible("eat", n) and not known_food else 0,
+            n.thirst * 1.15 if reg.eligible("drink", n) and not known_water else 0,
+        )
+        for destination in self.world.places[self.location].neighbors:
             familiarity = self.memory.familiarity.get(destination, 0)
-            novelty = (100 - familiarity) * 0.16 * (n.curiosity / 100)
-            score = (n.curiosity * self.personality.curiosity * 0.24
-                     + novelty - n.fear * (1 - self.personality.boldness) * 0.5
-                     - n.fatigue * 0.15)
+            novelty = (100 - familiarity) * .16 * (n.curiosity / 100)
+            score = (n.curiosity * self.personality.curiosity * .24 + novelty
+                     - n.fear * (1 - self.personality.boldness) * .5
+                     - n.fatigue * .15)
             if destination == self.last_destination:
                 score -= 12
-            # Known, uninteresting rooms do not force purposeless travel.
+            # Prefer less familiar reachable rooms when searching for unknown necessities.
+            search_score = unmet_search + (100 - familiarity) * .12
+            if destination == self.last_destination:
+                search_score -= 8
+            score = max(score, search_score if unmet_search else score)
             if score > 0:
                 scores["move:" + destination] = score
 
-        # Rest-site preference is informed by observed, remembered shelter.
         if reg.eligible("sleep", n):
             target = preferred_rest_site(self)
-            if target is not None and target != self.location:
+            if target and target != self.location:
                 step = next_step(self.world.places, self.location, target)
-                if step is not None:
+                if step:
                     key = "move:" + step
-                    scores[key] = max(scores.get(key, 0), n.fatigue * (0.9 + rest_rhythm * 0.5) + 15)
+                    scores[key] = max(scores.get(key, 0), n.fatigue * (.9 + rest_rhythm * .5) + 15)
 
-        # Navigation uses remembered observations, not omniscient world objects.
         for destination, kinds in self.memory.resources.items():
             if destination == self.location:
                 continue
             step = next_step(self.world.places, self.location, destination)
-            if step is None:
+            if not step:
                 continue
-            motivation = 0.0
-            if "food" in kinds and reg.eligible("eat", n):
-                motivation = max(motivation, n.hunger * 1.3)
-            if "water" in kinds and reg.eligible("drink", n):
-                motivation = max(motivation, n.thirst * 1.4)
-            if "shelter" in kinds and reg.eligible("hide", n):
-                motivation = max(motivation, n.fear * 0.9)
-            if "shelter" in kinds and reg.eligible("sleep", n):
-                motivation = max(motivation, n.fatigue * 0.9)
-            key = "move:" + step
+            motivation = max(
+                n.hunger * 1.35 if "food" in kinds and reg.eligible("eat", n) else 0,
+                n.thirst * 1.45 if "water" in kinds and reg.eligible("drink", n) else 0,
+                n.fear * .9 if "shelter" in kinds and reg.eligible("hide", n) else 0,
+                n.fatigue * .9 if "shelter" in kinds and reg.eligible("sleep", n) else 0,
+            )
             if motivation:
+                key = "move:" + step
                 scores[key] = max(scores.get(key, 0), motivation)
 
+        # Existing intentions only affect legal adjacent steps; local urgent
+        # actions are still free to compete rather than being overridden later.
+        target = self.navigation_target
+        if target and target != self.location:
+            step = next_step(self.world.places, self.location, target)
+            if step:
+                key = "move:" + step
+                scores[key] = max(scores.get(key, 0), 35.0)
         for action in self.cooldowns:
             if action != "idle":
                 scores.pop(action, None)
         return scores
 
     def choose(self) -> Activity:
-        reg = self.regulation
-        n = self.needs
         self.scores = self.utilities()
-        self.adjustments = {action: self.rng.uniform(-2, 2) for action in self.scores}
-        self.final_scores = {
-            action: value + self.adjustments[action]
-            for action, value in self.scores.items()
-        }
+        self.adjustments = {key: self.rng.uniform(-2, 2) for key in self.scores}
+        self.final_scores = {key: score + self.adjustments[key]
+                             for key, score in self.scores.items()}
         action = max(self.final_scores, key=self.final_scores.get)
-        # Retain navigation intent across intermediate rooms.
-        target = getattr(self, "navigation_target", None)
-        if target and target != self.location and action not in {"eat", "drink", "hide", "sleep"}:
-            step = next_step(self.world.places, self.location, target)
-            if step:
-                action = "move:" + step
-                self.scores.setdefault(action, 0.0)
-            else:
-                self.navigation_target = None
-        if action.startswith("move:") and self.navigation_target is None:
-            first_step = action.split(":", 1)[1]
-            for destination, kinds in self.memory.resources.items():
-                if destination != self.location and next_step(self.world.places, self.location, destination) == first_step:
-                    if (("food" in kinds and reg.eligible("eat", n)) or
-                        ("water" in kinds and reg.eligible("drink", n)) or
-                        ("shelter" in kinds and reg.eligible("sleep", n))):
-                        self.navigation_target = destination
-                        break
+        if action.startswith("move:"):
+            step = action.split(":", 1)[1]
+            if self.navigation_target is None:
+                candidates = []
+                for destination, kinds in self.memory.resources.items():
+                    if destination == self.location or next_step(
+                            self.world.places, self.location, destination) != step:
+                        continue
+                    urgency = max(
+                        self.needs.hunger * 1.35 if "food" in kinds and self.regulation.eligible("eat", self.needs) else 0,
+                        self.needs.thirst * 1.45 if "water" in kinds and self.regulation.eligible("drink", self.needs) else 0,
+                        self.needs.fatigue if "shelter" in kinds and self.regulation.eligible("sleep", self.needs) else 0,
+                    )
+                    if urgency:
+                        candidates.append((urgency, destination))
+                if candidates:
+                    self.navigation_target = max(candidates)[1]
         self.goal = (Goal("navigate", action.split(":", 1)[1], self.scores[action])
                      if action.startswith("move:") else
                      Goal(action, self.location, self.scores[action]))
         durations_minutes = {"sleep": 60, "groom": 6, "eat": 10, "drink": 3,
                              "play": 12, "hide": 15, "rest": 20,
                              "investigate": 5, "idle": 15, "move": 3}
-        import math
         kind = "move" if action.startswith("move:") else action
         duration = max(1, math.ceil(durations_minutes.get(kind, 10) / self.clock.tick_minutes))
         return Activity(action, duration,
