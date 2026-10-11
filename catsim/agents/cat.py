@@ -2,6 +2,7 @@
 import random
 from catsim.biology.needs import Needs
 from catsim.biology.metabolism import Metabolism
+from catsim.biology.activity_budget import ActivityBudget, apply_activity
 from catsim.biology.clock import SimulationClock
 from catsim.biology.personality import Personality
 from catsim.behavior.regulation import Regulation
@@ -29,6 +30,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
             raise ValueError('tick_minutes must be positive')
         self.clock = SimulationClock(tick_minutes=tick_minutes)
         self.metabolism = metabolism or Metabolism()
+        self.activity_budget = ActivityBudget()
         self.metrics = Metrics()
         self.rng = random.Random(seed)
         self.world = world if world is not None else Environment()
@@ -63,7 +65,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.clock.advance()
         self.needs.tick(self.clock.tick_minutes, self.metabolism)
         for action in list(self.cooldowns):
-            self.cooldowns[action] -= 1
+            self.cooldowns[action] -= self.clock.tick_minutes
             if self.cooldowns[action] <= 0:
                 del self.cooldowns[action]
         self.perceive()
@@ -77,6 +79,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
             event = f"interrupts rest; starts {self.activity.name}" if interrupted else f"starts {self.activity.name}"
         else:
             event = f"continues {self.activity.name}"
+        apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
         self.activity.remaining -= 1
         if self.activity.remaining <= 0:
             event += f"; {self.finish(self.activity)}"
