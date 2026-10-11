@@ -79,8 +79,12 @@ class Cat(DecisionSystem, BehaviorExecutor):
             self.activity = None
         if self.activity is None:
             self.activity = self.choose()
-            event = (f"interrupts activity; starts {self.activity.name}"
-                     if interrupted else f"starts {self.activity.name}")
+            if disturbed:
+                event = f"interrupts rest; starts {self.activity.name}"
+            elif need_interruption:
+                event = f"interrupts activity; starts {self.activity.name}"
+            else:
+                event = f"starts {self.activity.name}"
         else:
             event = f"continues {self.activity.name}"
         apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
