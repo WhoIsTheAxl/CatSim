@@ -47,6 +47,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.final_scores: dict[str, float] = {}
         self.adjustments: dict[str, float] = {}
         self.goal = None
+        self.navigation_target = None
 
     def perceive(self) -> None:
         self.observations = self.senses.observe(self.location, self.world)
@@ -66,6 +67,8 @@ class Cat(DecisionSystem, BehaviorExecutor):
             if self.cooldowns[action] <= 0:
                 del self.cooldowns[action]
         self.perceive()
+        if self.navigation_target == self.location:
+            self.navigation_target = None
         interrupted = should_interrupt_rest(self.activity, self.new_stimuli)
         if interrupted:
             self.activity = None
