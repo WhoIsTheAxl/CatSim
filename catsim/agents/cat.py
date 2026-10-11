@@ -8,6 +8,7 @@ from catsim.biology.personality import Personality
 from catsim.behavior.regulation import Regulation
 from catsim.simulation.metrics import Metrics
 from catsim.behavior.arousal import should_interrupt_rest
+from catsim.behavior.interruptions import should_interrupt_for_needs
 from catsim.cognition.memory import Memory
 from catsim.cognition.decision import DecisionSystem
 from catsim.behavior.execution import BehaviorExecutor
@@ -71,12 +72,15 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.perceive()
         if self.navigation_target == self.location:
             self.navigation_target = None
-        interrupted = should_interrupt_rest(self.activity, self.new_stimuli)
+        disturbed = should_interrupt_rest(self.activity, self.new_stimuli)
+        need_interruption = not disturbed and should_interrupt_for_needs(self)
+        interrupted = disturbed or need_interruption
         if interrupted:
             self.activity = None
         if self.activity is None:
             self.activity = self.choose()
-            event = f"interrupts rest; starts {self.activity.name}" if interrupted else f"starts {self.activity.name}"
+            event = (f"interrupts activity; starts {self.activity.name}"
+                     if interrupted else f"starts {self.activity.name}")
         else:
             event = f"continues {self.activity.name}"
         apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
