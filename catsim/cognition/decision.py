@@ -58,6 +58,17 @@ class DecisionSystem:
             if score > 0:
                 scores["move:" + destination] = score
 
+        # Leave resource-only rooms once feeding and drinking needs are met.
+        # Use only observed resources and remembered neighboring enrichment.
+        if (("food" in perceived or "water" in perceived)
+                and "toy" not in perceived and "shelter" not in perceived
+                and not reg.eligible("eat", n) and not reg.eligible("drink", n)):
+            for destination in self.world.places[self.location].neighbors:
+                known = self.memory.resources.get(destination, set())
+                if "toy" in known or "shelter" in known:
+                    key = "move:" + destination
+                    scores[key] = max(scores.get(key, 0), 21.0)
+
         if reg.eligible("sleep", n):
             target = preferred_rest_site(self)
             if target and target != self.location:
