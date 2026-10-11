@@ -72,5 +72,44 @@ class RegulationTests(unittest.TestCase):
         self.assertGreater(cat.metrics.locations["Living Room"], 5)
 
 
+class VersionSixTests(unittest.TestCase):
+    def test_time_normalized_rates(self):
+        from catsim.biology.needs import Needs
+        a, b = Needs(), Needs()
+        a.tick(minutes=60)
+        for _ in range(60):
+            b.tick(minutes=1)
+        self.assertAlmostEqual(a.hunger, b.hunger)
+        self.assertAlmostEqual(a.thirst, b.thirst)
+
+    def test_configurable_tick_length(self):
+        cat = Cat(tick_minutes=15)
+        cat.step()
+        self.assertEqual(cat.clock.elapsed_minutes, 15)
+
+    def test_invalid_tick_length(self):
+        with self.assertRaises(ValueError):
+            Cat(tick_minutes=0)
+
+    def test_experiment_reproducibility(self):
+        from catsim.simulation.metrics import batch_experiment
+        self.assertEqual(batch_experiment(range(3), 40),
+                         batch_experiment(range(3), 40))
+
+    def test_navigation_target_reaches_destination(self):
+        cat = Cat()
+        cat.location = "Bedroom"
+        cat.perceive()
+        cat.location = "Kitchen"
+        cat.perceive()
+        cat.navigation_target = "Bedroom"
+        cat.needs.hunger = 0
+        cat.needs.thirst = 0
+        cat.needs.fatigue = 5
+        cat.activity = None
+        cat.step()
+        self.assertEqual(cat.activity.name, "move:Living Room")
+
+
 if __name__ == "__main__":
     unittest.main()
