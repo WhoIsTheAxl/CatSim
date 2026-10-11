@@ -45,6 +45,36 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v1.0 research pass 2 — Evidence-to-code comparison
+
+**Literature reviewed:** Ellis et al. (2013), AAFP/ISFM Feline
+Environmental Needs Guidelines, DOI 10.1177/1098612X13477537.
+The guidelines recommend multiple separated key resources, safe places,
+opportunities for scratching and predatory play, and individual choice.
+
+**Codebase comparison (before changes):**
+- `world/objects.py`: food and water co-located in Kitchen; no scratching
+  surface or toileting resources; two shelters already present.
+- `cognition/decision.py`: local toy/shelter/food/water observation already
+  supported; no scratching action.
+- `biology/activity_budget.py`: fixed meal and drinking relief rates;
+  **not** measurements of actual intake or satiety.
+- `biology/sleep_pressure.py`: independent state, but rates and thresholds
+  remain hypotheses, not polysomnographic calibration.
+
+**Implemented in this pass:**
+- Added a separate water station in Bedroom **while retaining Kitchen water
+  for backwards compatibility**; this is a partial resource-separation step.
+- Added a visible scratching post in Living Room and an observation-gated
+  `scratch` action with a 2-minute provisional duration.
+- Added evidence provenance and five environment/perception regression tests.
+
+**Remaining scientific gaps:** Food and water are still co-located in Kitchen,
+there is no litter resource, scratch motivation is heuristic, and no measured
+activity-budget calibration exists. The guideline is a welfare recommendation,
+**not a numerical model of how often cats scratch or drink**. This pass
+improves the represented environment, not demonstrated predictive accuracy.
+
 ## v1.0 research track — Scientific validation infrastructure (in progress)
 
 **v1.0 is NOT scientifically validated yet.** This initial research pass adds:
