@@ -1,0 +1,30 @@
+name: CatSim V1 release
+on:
+  push:
+    tags:
+      - 'v1'
+permissions:
+  contents: write
+jobs:
+  verify-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and run full test suite
+        run: |
+          python -m compileall -q catsim tests
+          python -m unittest discover -s tests -v
+      - name: Build source archive
+        run: |
+          git archive --format=zip --prefix=CatSim-v1/ -o CatSim-v1-source.zip HEAD
+      - name: Publish CatSim V1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1 CatSim-v1-source.zip \
+            --title "CatSim V1" \
+            --notes-file RELEASE_NOTES_V1.md \
+            --verify-tag
