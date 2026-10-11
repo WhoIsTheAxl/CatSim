@@ -1,4 +1,4 @@
-"""Utility scoring with perceived resources and remembered navigation goals."""
+"""Experimental utility-based choices, gated by behavioral eligibility."""
 from catsim.behavior.activity import Activity
 from catsim.behavior.navigation import next_step
 from catsim.cognition.goals import Goal
@@ -9,31 +9,37 @@ class DecisionSystem:
         n = self.needs
         place = self.world.places[self.location]
         perceived = {item.kind for item in self.observations}
-        scores: dict[str, float] = {
-            "rest": 8 + n.fatigue * 0.3,
-            "sleep": n.fatigue * 1.2 + (18 if "shelter" in perceived else 0),
-            "groom": n.grooming_urge * 0.7,
-        }
-        if "food" in perceived:
+        reg = self.regulation
+        scores: dict[str, float] = {"idle": 9.0}
+
+        if reg.eligible("rest", n):
+            scores["rest"] = 8 + n.fatigue * 0.3
+        if reg.eligible("sleep", n):
+            scores["sleep"] = n.fatigue * 1.2 + (18 if "shelter" in perceived else 0)
+        if reg.eligible("groom", n):
+            scores["groom"] = n.grooming_urge * 0.7
+        if "food" in perceived and reg.eligible("eat", n):
             scores["eat"] = n.hunger * 1.5
-        if "water" in perceived:
+        if "water" in perceived and reg.eligible("drink", n):
             scores["drink"] = n.thirst * 1.6
-        if "toy" in perceived:
-            scores["play"] = n.play_urge * 0.9 - n.fatigue * 0.25
-        if "shelter" in perceived:
+        if "toy" in perceived and reg.eligible("play", n):
+            scores["play"] = n.play_urge * self.personality.playfulness * 1.5 - n.fatigue * 0.25
+        if "shelter" in perceived and reg.eligible("hide", n):
             scores["hide"] = n.fear * 1.4
-        if "novel_object" in perceived:
-            scores["investigate"] = n.curiosity * 0.65 - n.fear * 0.3
+        if "novel_object" in perceived and reg.eligible("investigate", n):
+            scores["investigate"] = n.curiosity * self.personality.curiosity - n.fear * 0.3
 
         for destination in place.neighbors:
             familiarity = self.memory.familiarity.get(destination, 0)
-            score = (n.curiosity * 0.45 + (100 - familiarity) * 0.25
-                     - n.fear * 0.35 - n.fatigue * 0.15)
+            novelty = (100 - familiarity) * 0.25
+            score = (reg.exploration_floor + n.curiosity * self.personality.curiosity * 0.5
+                     + novelty - n.fear * (1 - self.personality.boldness) * 0.5
+                     - n.fatigue * 0.15)
             if destination == self.last_destination:
-                score -= 24
+                score -= 12
             scores["move:" + destination] = score
 
-        # Use learned resource locations, not world-wide omniscient queries.
+        # Navigation uses remembered observations, not omniscient world objects.
         for destination, kinds in self.memory.resources.items():
             if destination == self.location:
                 continue
@@ -41,14 +47,17 @@ class DecisionSystem:
             if step is None:
                 continue
             motivation = 0.0
-            if "food" in kinds:
+            if "food" in kinds and reg.eligible("eat", n):
                 motivation = max(motivation, n.hunger * 1.3)
-            if "water" in kinds:
+            if "water" in kinds and reg.eligible("drink", n):
                 motivation = max(motivation, n.thirst * 1.4)
-            if "shelter" in kinds:
-                motivation = max(motivation, n.fear * 0.9 + n.fatigue * 0.25)
+            if "shelter" in kinds and reg.eligible("hide", n):
+                motivation = max(motivation, n.fear * 0.9)
+            if "shelter" in kinds and reg.eligible("sleep", n):
+                motivation = max(motivation, n.fatigue * 0.9)
             key = "move:" + step
-            scores[key] = max(scores.get(key, 0), motivation)
+            if motivation:
+                scores[key] = max(scores.get(key, 0), motivation)
 
         for action in self.cooldowns:
             scores.pop(action, None)
@@ -56,9 +65,16 @@ class DecisionSystem:
 
     def choose(self) -> Activity:
         self.scores = self.utilities()
-        action = max(self.scores, key=lambda a: self.scores[a] + self.rng.uniform(-2, 2))
-        self.goal = Goal("navigate", action.split(":", 1)[1], self.scores[action]) if action.startswith("move:") else Goal(action, self.location, self.scores[action])
+        self.adjustments = {action: self.rng.uniform(-2, 2) for action in self.scores}
+        self.final_scores = {
+            action: value + self.adjustments[action]
+            for action, value in self.scores.items()
+        }
+        action = max(self.final_scores, key=self.final_scores.get)
+        self.goal = (Goal("navigate", action.split(":", 1)[1], self.scores[action])
+                     if action.startswith("move:") else
+                     Goal(action, self.location, self.scores[action]))
         durations = {"sleep": 5, "groom": 2, "eat": 2, "drink": 2,
-                     "play": 3, "hide": 3, "rest": 2, "investigate": 3}
+                     "play": 3, "hide": 3, "rest": 2, "investigate": 3, "idle": 2}
         return Activity(action, durations.get(action, 2),
                         action.split(":", 1)[1] if action.startswith("move:") else None)
