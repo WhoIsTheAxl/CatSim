@@ -45,6 +45,18 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.5 — Research-informed rest and activity (experimental)
+
+- Daily activity drive with configurable simulation-clock input; twilight peaks are a **hypothesis-inspired curve**, not fitted measurements.
+- Rest/sleep motivation changes with time of day.
+- Shelter-aware sleep preference based on **remembered** resource locations.
+- Newly detected loud sounds can interrupt rest; a sound is not counted as a new threat every tick.
+- Dedicated tests in `tests/test_rest_rhythm.py` and Python 3.14 CI coverage.
+
+Evidence: AAFP/ISFM environmental needs guidelines (2013) describe the importance of secure resting locations. Published activity studies show that cat rhythms vary with environment and individuals; a single twilight curve cannot represent every cat. See [comparison of indoor/outdoor activity and feeding rhythms](https://pmc.ncbi.nlm.nih.gov/articles/PMC9494968/).
+
+**Limitations:** Rhythm coefficients, time scale, noise threshold, and shelter scores are unvalidated; disturbance events must still be injected explicitly; this does not simulate sleep physiology or actual sleep-stage architecture.
+
 ## v0.4 — Behavioral regulation and observability
 
 - **Action eligibility:** eating, drinking, sleeping, resting, grooming, playing, hiding and investigating have configurable minimum-need gates. These are **unvalidated simulation parameters**.
