@@ -2,6 +2,8 @@
 from catsim.behavior.activity import Activity
 from catsim.behavior.navigation import next_step
 from catsim.cognition.goals import Goal
+from catsim.biology.rhythm import activity_drive, rest_drive
+from catsim.behavior.resting import preferred_rest_site
 
 
 class DecisionSystem:
@@ -11,11 +13,13 @@ class DecisionSystem:
         perceived = {item.kind for item in self.observations}
         reg = self.regulation
         scores: dict[str, float] = {"idle": 9.0}
+        rhythm = activity_drive(self.clock.hour_of_day)
+        rest_rhythm = rest_drive(self.clock.hour_of_day)
 
         if reg.eligible("rest", n):
             scores["rest"] = 8 + n.fatigue * 0.3
         if reg.eligible("sleep", n):
-            scores["sleep"] = n.fatigue * 1.2 + (18 if "shelter" in perceived else 0)
+            scores["sleep"] = n.fatigue * (0.9 + rest_rhythm * 0.5) + (24 if "shelter" in perceived else -12)
         if reg.eligible("groom", n):
             scores["groom"] = n.grooming_urge * 0.7
         if "food" in perceived and reg.eligible("eat", n):
@@ -23,7 +27,7 @@ class DecisionSystem:
         if "water" in perceived and reg.eligible("drink", n):
             scores["drink"] = n.thirst * 1.6
         if "toy" in perceived and reg.eligible("play", n):
-            scores["play"] = n.play_urge * self.personality.playfulness * 1.5 - n.fatigue * 0.25
+            scores["play"] = n.play_urge * self.personality.playfulness * (1.2 + rhythm * 0.5) - n.fatigue * 0.25
         if "shelter" in perceived and reg.eligible("hide", n):
             scores["hide"] = n.fear * 1.4
         if "novel_object" in perceived and reg.eligible("investigate", n):
@@ -38,6 +42,15 @@ class DecisionSystem:
             if destination == self.last_destination:
                 score -= 12
             scores["move:" + destination] = score
+
+        # Rest-site preference is informed by observed, remembered shelter.
+        if reg.eligible("sleep", n):
+            target = preferred_rest_site(self)
+            if target is not None and target != self.location:
+                step = next_step(self.world.places, self.location, target)
+                if step is not None:
+                    key = "move:" + step
+                    scores[key] = max(scores.get(key, 0), n.fatigue * (0.9 + rest_rhythm * 0.5) + 15)
 
         # Navigation uses remembered observations, not omniscient world objects.
         for destination, kinds in self.memory.resources.items():
