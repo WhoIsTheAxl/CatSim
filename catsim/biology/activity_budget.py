@@ -36,9 +36,10 @@ def apply_activity(needs, name: str, minutes: float, budget: ActivityBudget):
         needs.thirst = clamp(needs.thirst - budget.water_relief_per_hour * h)
     elif name == "groom":
         needs.grooming_urge = clamp(needs.grooming_urge - budget.grooming_relief_per_hour * h)
-    elif name == "play":
-        needs.play_urge = clamp(needs.play_urge - budget.play_relief_per_hour * h)
-        needs.fatigue = clamp(needs.fatigue + budget.play_fatigue_per_hour * h)
+    elif name in {"play", "bat_toy"}:
+        factor = 0.5 if name == "bat_toy" else 1.0
+        needs.play_urge = clamp(needs.play_urge - budget.play_relief_per_hour * h * factor)
+        needs.fatigue = clamp(needs.fatigue + budget.play_fatigue_per_hour * h * factor)
     elif name == "hide":
         needs.fear = clamp(needs.fear - budget.hide_fear_relief_per_hour * h)
     elif name == "investigate":
