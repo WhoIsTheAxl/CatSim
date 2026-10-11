@@ -21,7 +21,9 @@ class DecisionSystem:
         if reg.eligible("rest", n):
             scores["rest"] = 7 + n.fatigue * .35 + (7 if "shelter" in perceived else 0)
         if reg.eligible("sleep", n):
-            scores["sleep"] = n.fatigue * (.9 + rest_rhythm * .5) + (24 if "shelter" in perceived else -20)
+            scores["sleep"] = (n.fatigue * (.9 + rest_rhythm * .5)
+                               + self.sleep_pressure.value * .5
+                               + (24 if "shelter" in perceived else -20))
         if reg.eligible("groom", n):
             scores["groom"] = n.grooming_urge * .7
         if "food" in perceived and reg.eligible("eat", n):
@@ -35,6 +37,17 @@ class DecisionSystem:
             scores["hide"] = n.fear * 1.4
         if "novel_object" in perceived and reg.eligible("investigate", n):
             scores["investigate"] = n.curiosity * self.personality.curiosity - n.fear * .3
+
+        # Low-commitment behaviors broaden the action vocabulary without
+        # forcing variety or consulting objects outside current perception.
+        # Scores are intentionally modest; basic needs retain priority.
+        if n.fatigue < 65 and n.fear < 35:
+            scores["stretch"] = 11 + n.fatigue * .18
+        if n.curiosity >= 20 and n.fear < 55:
+            scores["observe"] = 8 + n.curiosity * .17
+        if "toy" in perceived and n.play_urge >= 20:
+            scores["bat_toy"] = (8 + n.play_urge * .31
+                                 * self.play_habituation.play_multiplier)
 
         known_food = any("food" in kinds for kinds in self.memory.resources.values())
         known_water = any("water" in kinds for kinds in self.memory.resources.values())
@@ -134,6 +147,7 @@ class DecisionSystem:
                      if action.startswith("move:") else
                      Goal(action, self.location, self.scores[action]))
         durations_minutes = {"sleep": 60, "groom": 6, "eat": 10, "drink": 3,
+                             "stretch": 2, "observe": 4, "bat_toy": 5,
                              "play": 12, "hide": 15, "rest": 20,
                              "investigate": 5, "idle": 15, "move": 3}
         kind = "move" if action.startswith("move:") else action
