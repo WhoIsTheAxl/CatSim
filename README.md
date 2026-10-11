@@ -1,3 +1,22 @@
+## CatSim V1 source release
+
+The `v1` tag triggers `.github/workflows/release.yml`. It runs the
+full unit-test suite, archives the **tagged source commit**, and publishes
+a GitHub release titled **CatSim V1** with the `CatSim-v1-source.zip`
+attachment and GitHub's built-in ZIP/TAR source snapshots. Release notes
+are maintained in `RELEASE_NOTES_V1.md`.
+
+A release is only published **after the tag is pushed and CI succeeds**.
+The workflow does not claim empirical validation. To inspect uncalibrated
+parameters:
+
+```bash
+python - <<'PY'
+from catsim.research.parameter_audit import audit_parameters
+print(audit_parameters())
+PY
+```
+
 # CatSim 🐈
 
 **A Python cat-behavior simulator informed by published feline science.**
