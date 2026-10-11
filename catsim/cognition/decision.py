@@ -49,6 +49,9 @@ class DecisionSystem:
             scores["bat_toy"] = (8 + n.play_urge * .31
                                  * self.play_habituation.play_multiplier)
 
+        if "scratch_surface" in perceived and n.fear < 65:
+            scores["scratch"] = 10 + n.grooming_urge * .22
+
         known_food = any("food" in kinds for kinds in self.memory.resources.values())
         known_water = any("water" in kinds for kinds in self.memory.resources.values())
         # Missing resources produce search motivation, NOT knowledge of their position.
@@ -147,7 +150,7 @@ class DecisionSystem:
                      if action.startswith("move:") else
                      Goal(action, self.location, self.scores[action]))
         durations_minutes = {"sleep": 60, "groom": 6, "eat": 10, "drink": 3,
-                             "stretch": 2, "observe": 4, "bat_toy": 5,
+                             "stretch": 2, "observe": 4, "bat_toy": 5, "scratch": 2,
                              "play": 12, "hide": 15, "rest": 20,
                              "investigate": 5, "idle": 15, "move": 3}
         kind = "move" if action.startswith("move:") else action
