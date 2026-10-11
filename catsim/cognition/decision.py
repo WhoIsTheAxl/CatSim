@@ -29,7 +29,8 @@ class DecisionSystem:
         if "water" in perceived and reg.eligible("drink", n):
             scores["drink"] = n.thirst * 1.6
         if "toy" in perceived and reg.eligible("play", n):
-            scores["play"] = n.play_urge * self.personality.playfulness * (1.2 + rhythm * .5) - n.fatigue * .25
+            scores["play"] = (n.play_urge * self.personality.playfulness * (1.2 + rhythm * .5)
+                              * self.play_habituation.play_multiplier - n.fatigue * .25)
         if "shelter" in perceived and reg.eligible("hide", n):
             scores["hide"] = n.fear * 1.4
         if "novel_object" in perceived and reg.eligible("investigate", n):
