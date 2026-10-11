@@ -14,8 +14,8 @@ class ActivityBudget:
     rest_recovery_per_hour: float = 3.0
     travel_fatigue_per_hour: float = 3.0
     play_fatigue_per_hour: float = 5.0
-    food_relief_per_hour: float = 45.0
-    water_relief_per_hour: float = 60.0
+    food_relief_per_hour: float = 180.0
+    water_relief_per_hour: float = 300.0
     grooming_relief_per_hour: float = 20.0
     play_relief_per_hour: float = 20.0
     hide_fear_relief_per_hour: float = 8.0
