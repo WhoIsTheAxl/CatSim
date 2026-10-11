@@ -45,6 +45,32 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.9 — Behavioral habituation (first implementation pass)
+
+- Added time-scaled **toy-play habituation**: repeating play with an unchanged
+  toy progressively lowers its attractiveness, while time spent on other
+  activities allows interest to recover.
+- A `novel_toy()` reset is available for future toy-rotation and stimulus
+  change events; **automatic toy rotation is not implemented yet**.
+- Added six tests for habituation, recovery, time scaling, novelty, utility
+  effects and deterministic simulation.
+
+**Research connection:** Hall, Bradshaw & Robinson (2002), *Object play in
+adult domestic cats: the roles of habituation and disinhibition*,
+[DOI 10.1016/S0168-1591(02)00153-3](https://doi.org/10.1016/S0168-1591(02)00153-3),
+observed habituation to an unchanged toy and renewed play after changing toy
+characteristics. The **numerical habituation rates are invented model
+parameters, not fitted experimental estimates**.
+
+### Road to v1.0: evidence and calibration
+
+v1.0 should require a traceable evidence registry (population, methods,
+sample sizes, outcomes, limitations), reference activity-budget distributions,
+multi-seed comparison experiments, parameter sensitivity analysis and explicit
+holdout validation. Sleep bouts, meal patterns, individual differences and
+environmental context require additional research before claiming realism.
+Passing software tests is not scientific validation.
+
 ## v0.8 — Need-directed behavior and activity measurement (experimental)
 
 - **Resource discovery:** Hunger and thirst can motivate exploration even when
