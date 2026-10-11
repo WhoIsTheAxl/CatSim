@@ -26,6 +26,15 @@ REGISTRY = {
         "world / cognition / resting",
         "Clinical environmental recommendations do not determine action probabilities.",
     ),
+    "resource_separation": Evidence(
+        "resource_separation",
+        "Ellis et al. (2013), AAFP/ISFM Feline Environmental Needs Guidelines",
+        "research-informed",
+        "Food, water, scratching, resting and toileting resources should be available with choice and separation.",
+        "10.1177/1098612X13477537",
+        "world/objects.py / cognition/decision.py",
+        "A single additional water station and scratching post do not satisfy all guideline recommendations.",
+    ),
     "toy_habituation": Evidence(
         "toy_habituation",
         "Hall, Bradshaw & Robinson (2002), Object play in adult domestic cats",
