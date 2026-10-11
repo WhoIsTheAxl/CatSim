@@ -92,7 +92,9 @@ class Cat(DecisionSystem, BehaviorExecutor):
         else:
             event = f"continues {self.activity.name}"
         apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
-        self.play_habituation.advance(self.activity.name, self.clock.tick_minutes)
+        self.play_habituation.advance(
+            "play" if self.activity.name == "bat_toy" else self.activity.name,
+            self.clock.tick_minutes)
         self.sleep_pressure.advance(self.activity.name, self.clock.tick_minutes)
         self.activity.remaining -= 1
         if self.activity.remaining <= 0:
