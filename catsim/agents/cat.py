@@ -4,6 +4,7 @@ from catsim.biology.needs import Needs
 from catsim.biology.metabolism import Metabolism
 from catsim.biology.activity_budget import ActivityBudget, apply_activity
 from catsim.biology.clock import SimulationClock
+from catsim.biology.sleep_pressure import SleepPressure
 from catsim.biology.personality import Personality
 from catsim.behavior.regulation import Regulation
 from catsim.simulation.metrics import Metrics
@@ -34,6 +35,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.metabolism = metabolism or Metabolism()
         self.activity_budget = ActivityBudget()
         self.play_habituation = PlayHabituation()
+        self.sleep_pressure = SleepPressure()
         self.metrics = Metrics()
         self.rng = random.Random(seed)
         self.world = world if world is not None else Environment()
@@ -91,6 +93,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
             event = f"continues {self.activity.name}"
         apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
         self.play_habituation.advance(self.activity.name, self.clock.tick_minutes)
+        self.sleep_pressure.advance(self.activity.name, self.clock.tick_minutes)
         self.activity.remaining -= 1
         if self.activity.remaining <= 0:
             event += f"; {self.finish(self.activity)}"
