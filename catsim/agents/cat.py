@@ -9,6 +9,7 @@ from catsim.behavior.regulation import Regulation
 from catsim.simulation.metrics import Metrics
 from catsim.behavior.arousal import should_interrupt_rest
 from catsim.behavior.interruptions import should_interrupt_for_needs
+from catsim.behavior.habituation import PlayHabituation
 from catsim.cognition.memory import Memory
 from catsim.cognition.decision import DecisionSystem
 from catsim.behavior.execution import BehaviorExecutor
@@ -32,6 +33,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         self.clock = SimulationClock(tick_minutes=tick_minutes)
         self.metabolism = metabolism or Metabolism()
         self.activity_budget = ActivityBudget()
+        self.play_habituation = PlayHabituation()
         self.metrics = Metrics()
         self.rng = random.Random(seed)
         self.world = world if world is not None else Environment()
@@ -88,6 +90,7 @@ class Cat(DecisionSystem, BehaviorExecutor):
         else:
             event = f"continues {self.activity.name}"
         apply_activity(self.needs, self.activity.name, self.clock.tick_minutes, self.activity_budget)
+        self.play_habituation.advance(self.activity.name, self.clock.tick_minutes)
         self.activity.remaining -= 1
         if self.activity.remaining <= 0:
             event += f"; {self.finish(self.activity)}"
