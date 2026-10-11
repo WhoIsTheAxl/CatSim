@@ -45,6 +45,28 @@ tests/
 
 Each domain owns its behavior. The CLI does not contain simulation logic. Numerical assumptions remain experimental and should eventually be configured and validated independently.
 
+## v0.8 — Need-directed behavior and activity measurement (experimental)
+
+- **Resource discovery:** Hunger and thirst can motivate exploration even when
+  food or water has not yet been observed. Search prioritizes less-familiar
+  adjacent rooms; it does **not** inspect hidden objects or know where food is.
+- **Resource-directed navigation:** Previously observed resources motivate
+  return trips. Existing navigation targets compete through the same utility
+  scores as other actions; debug scores and selected actions stay consistent.
+- **Urgent interruption:** Urgent hunger or thirst can preempt play, grooming,
+  idle, quiet rest or investigation when an actionable option exists.
+- **Behavioral time budgets:** Metrics now track time spent executing each
+  activity in ticks (including interrupted starts), in addition to start counts
+  and room occupancy. Convert ticks to minutes using the clock's tick length.
+- **Regression tests:** Unknown-resource behavior, exploration, navigation,
+  interruption, metrics and seeded determinism.
+
+The coefficients are **untested behavioral hypotheses**. These changes
+address logical failures observed in v0.7, but do not establish that the
+resulting activity budgets match real cats. Empirical calibration, sleep
+architecture, meal sizes, stimulus habituation and welfare-relevant behavioral
+variation remain open research tasks.
+
 ## v0.7 — The Normalization Overhaul (experimental)
 
 The first normalization pass changes **both** physiological rates and behavior
